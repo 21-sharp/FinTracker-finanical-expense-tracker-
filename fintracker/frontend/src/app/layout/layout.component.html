@@ -1,0 +1,131 @@
+<!-- SIDEBAR -->
+<aside class="sidebar" [class.collapsed]="sidebarCollapsed" [class.mobile-open]="mobileMenuOpen">
+  <div class="sidebar-header">
+    <a routerLink="/app/dashboard" class="brand">
+      <i class="fas fa-chart-line"></i>
+      <span *ngIf="!sidebarCollapsed">FinTrack</span>
+    </a>
+    <button class="collapse-btn" (click)="toggleSidebar()" *ngIf="!sidebarCollapsed">
+      <i class="fas fa-chevron-left"></i>
+    </button>
+  </div>
+
+  <nav class="sidebar-nav">
+    <a *ngFor="let item of menuItems"
+       [routerLink]="item.path"
+       routerLinkActive="active"
+       class="nav-item"
+       (click)="mobileMenuOpen = false">
+      <i [class]="item.icon"></i>
+      <span *ngIf="!sidebarCollapsed">{{item.label}}</span>
+    </a>
+  </nav>
+
+  <!-- Contact Details -->
+  <div class="sidebar-contact" *ngIf="!sidebarCollapsed">
+    <button class="contact-toggle" (click)="contactExpanded = !contactExpanded" [class.active]="contactExpanded" aria-expanded="contactExpanded">
+      <span class="toggle-text">
+        <i class="fas fa-address-book"></i>
+        <span>Contact Details</span>
+      </span>
+      <i class="fas fa-chevron-down toggle-icon"></i>
+    </button>
+    
+    <div class="contact-items-container" [class.expanded]="contactExpanded">
+      <div class="contact-items">
+        <div class="contact-row">
+          <i class="fas fa-envelope"></i>
+          <div class="contact-text">
+            <span class="contact-label">Email</span>
+            <span class="contact-val">support&#64;fintrack.in</span>
+          </div>
+        </div>
+        <div class="contact-row">
+          <i class="fas fa-phone-alt"></i>
+          <div class="contact-text">
+            <span class="contact-label">Phone</span>
+            <span class="contact-val">+91 80001 00001</span>
+          </div>
+        </div>
+        <div class="contact-row">
+          <i class="fas fa-map-marker-alt"></i>
+          <div class="contact-text">
+            <span class="contact-label">Location</span>
+            <span class="contact-val">Bengaluru, India</span>
+          </div>
+        </div>
+        <div class="contact-row">
+          <i class="fas fa-globe"></i>
+          <div class="contact-text">
+            <span class="contact-label">Website</span>
+            <span class="contact-val">www.fintrack.in</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sidebar-footer">
+    <button class="logout-btn" (click)="logout()">
+      <i class="fas fa-sign-out-alt"></i>
+      <span *ngIf="!sidebarCollapsed">Logout</span>
+    </button>
+  </div>
+</aside>
+
+<!-- OVERLAY -->
+<div class="sidebar-overlay" *ngIf="mobileMenuOpen" (click)="mobileMenuOpen = false"></div>
+
+<!-- MAIN CONTENT -->
+<div class="main-wrapper" [class.sidebar-collapsed]="sidebarCollapsed">
+  <!-- TOP NAVBAR -->
+  <header class="top-navbar">
+    <div class="navbar-left">
+      <button class="menu-toggle" (click)="sidebarCollapsed ? toggleSidebar() : toggleMobileMenu()">
+        <i class="fas fa-bars"></i>
+      </button>
+      <div class="search-box-removed" style="display:none;"></div>
+    </div>
+    <div class="navbar-right">
+      <button class="nav-icon-btn suggestion-btn" (click)="toggleNotifications()">
+        <i class="fas fa-lightbulb"></i>
+        <span class="badge-dot" *ngIf="suggestions.length > 0 && hasUnreadSuggestions"></span>
+      </button>
+      <button class="nav-icon-btn header-logout-btn" (click)="logout()" title="Logout">
+        <i class="fas fa-sign-out-alt"></i>
+      </button>
+      <div class="suggestion-dropdown" *ngIf="notifOpen && suggestions.length > 0">
+        <div class="suggestion-header"><i class="fas fa-lightbulb"></i> Smart Savings Tips</div>
+        <div class="suggestion-item" *ngFor="let s of suggestions">
+          <i [class]="s.icon" [style.color]="s.color"></i>
+          <span>{{s.text}}</span>
+        </div>
+      </div>
+      <div class="suggestion-dropdown" *ngIf="notifOpen && suggestions.length === 0">
+        <div class="suggestion-header"><i class="fas fa-check-circle" style="color:#10b981"></i> All Good!</div>
+        <div class="suggestion-item"><i class="fas fa-thumbs-up" style="color:#3b82f6"></i><span>No suggestions right now. Keep up the great work!</span></div>
+      </div>
+      <div class="user-menu" (click)="profileMenuOpen = !profileMenuOpen">
+        <div class="user-avatar">
+          <img *ngIf="getAvatarSrc()" [src]="getAvatarSrc()" alt="User avatar">
+          <span *ngIf="!getAvatarSrc()">{{getInitials()}}</span>
+        </div>
+        <div class="user-info">
+          <span class="user-name">{{authService.getUser()?.firstName || 'User'}} {{authService.getUser()?.lastName || ''}}</span>
+          <span class="user-role">{{authService.getUser()?.role || 'Member'}}</span>
+        </div>
+        <div class="dropdown-menu" *ngIf="profileMenuOpen">
+          <a routerLink="/app/profile"><i class="fas fa-user"></i> Profile</a>
+          <a routerLink="/app/settings"><i class="fas fa-cog"></i> Settings</a>
+          <div class="dropdown-divider"></div>
+          <a (click)="logout()"><i class="fas fa-sign-out-alt"></i> Logout</a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- PAGE CONTENT -->
+  <main class="page-content">
+    <router-outlet></router-outlet>
+  </main>
+</div>

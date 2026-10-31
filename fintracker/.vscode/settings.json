@@ -1,0 +1,13 @@
+{
+  "terminal.integrated.env.windows": {
+    "JAVA_HOME": "C:\\Program Files\\Java\\jdk-25.0.2",
+    "PATH": "C:\\Program Files\\Java\\jdk-25.0.2\\bin;${env:PATH}"
+  },
+  "maven.terminal.customEnv": [
+    {
+      "environmentVariable": "JAVA_HOME",
+      "value": "C:\\Program Files\\Java\\jdk-25.0.2"
+    }
+  ],
+  "maven.executable.path": "C:\\Program Files\\apache-maven-3.9.16\\bin\\mvn.cmd"
+}

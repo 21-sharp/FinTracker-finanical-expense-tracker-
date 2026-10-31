@@ -1,0 +1,20 @@
+# Build outputs
+fintrack-frontend/dist/
+fintrack-frontend/.angular/
+fintrack-backend/target/
+
+# Dependencies
+fintrack-frontend/node_modules/
+
+# Bundled Maven (use system Maven or start.bat path locally)
+apache-maven-3.9.6/
+
+# IDE / OS
+.idea/
+*.iml
+.DS_Store
+Thumbs.db
+
+# Env secrets
+.env
+*.env.local

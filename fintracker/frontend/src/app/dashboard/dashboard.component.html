@@ -1,0 +1,208 @@
+<div class="dashboard" [class.loading]="loading">
+  <!-- WELCOME BANNER -->
+  <div class="welcome-banner container-fluid py-4 px-4 mb-4 rounded-3 shadow-sm border overflow-hidden">
+    <div class="row align-items-center">
+      <div class="col-md-8 col-sm-12 welcome-text-col">
+        <div class="dashboard-avatar" *ngIf="profilePicture">
+          <img [src]="profilePicture" alt="Profile avatar">
+        </div>
+        <!-- New User Greeting -->
+        <div *ngIf="isNewUser">
+          <h1 class="display-6 fw-bold mb-2 text-white">Hello, Welcome to FinTrack Pro!</h1>
+          <p class="lead mb-0 text-white-50">Let's get started on your wealth management journey. Visit the Transactions page to import CSV, Excel, PDF, or SQL transactions and generate analytics.</p>
+        </div>
+        <!-- Existing User Greeting -->
+        <div *ngIf="!isNewUser">
+          <h1 class="display-6 fw-bold mb-2 text-white">Welcome back, {{userName}}</h1>
+          <p class="lead mb-0 text-white-50">Here is your complete financial overview. All indicators look stable.</p>
+        </div>
+      </div>
+      <div class="col-md-4 col-sm-12 text-end d-none d-md-flex align-items-center justify-content-end banner-img-col">
+        <div class="banner-visual rounded-4 p-0 overflow-hidden shadow border-0" style="width: 160px; height: 160px;">
+          <img src="https://images.unsplash.com/photo-1579532537598-459ecdaf39cc?q=80&w=400&auto=format&fit=crop" alt="Finance Graph" style="width: 100%; height: 100%; object-fit: cover;">
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- STAT CARDS -->
+  <div class="stats-grid-5">
+    <div class="stat-card">
+      <div class="stat-top">
+        <div class="stat-icon blue"><i class="fas fa-wallet"></i></div>
+        <span class="stat-change" [class.positive]="totalBalance >= 0" [class.negative]="totalBalance < 0">
+          <i [class]="totalBalance >= 0 ? 'fas fa-arrow-up' : 'fas fa-arrow-down'"></i> {{getChangePercent()}}
+        </span>
+      </div>
+      <div class="stat-value">{{formatCurrency(totalBalance)}}</div>
+      <div class="stat-label">Total Balance</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-top">
+        <div class="stat-icon green"><i class="fas fa-arrow-down"></i></div>
+      </div>
+      <div class="stat-value">{{formatCurrency(monthlyIncome)}}</div>
+      <div class="stat-label">Total Income</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-top">
+        <div class="stat-icon red"><i class="fas fa-arrow-up"></i></div>
+      </div>
+      <div class="stat-value">{{formatCurrency(monthlyExpenses)}}</div>
+      <div class="stat-label">Total Expenses</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-top">
+        <div class="stat-icon info"><i class="fas fa-piggy-bank"></i></div>
+      </div>
+      <div class="stat-value">{{formatCurrency(monthlySavings)}}</div>
+      <div class="stat-label">Savings</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-top">
+        <div class="stat-icon yellow"><i class="fas fa-percentage"></i></div>
+      </div>
+      <div class="stat-value">{{savingsRate | number:'1.1-1'}}%</div>
+      <div class="stat-label">Savings Rate</div>
+    </div>
+  </div>
+
+  <div class="dashboard-grid">
+    <!-- INCOME VS EXPENSE LINE CHART -->
+    <div class="card chart-card">
+      <div class="card-head">
+        <h3><i class="fas fa-chart-line"></i> Income vs Expenses Trend</h3>
+        <select class="form-select form-select-sm w-auto" [(ngModel)]="selectedYear" (change)="onYearChange()">
+          <option *ngFor="let y of availableYears" [value]="y">{{y}}</option>
+        </select>
+      </div>
+      <div class="chart-container">
+        <apx-chart *ngIf="trendChartOptions.series"
+          [series]="trendChartOptions.series"
+          [chart]="trendChartOptions.chart"
+          [colors]="trendChartOptions.colors"
+          [fill]="trendChartOptions.fill"
+          [stroke]="trendChartOptions.stroke"
+          [dataLabels]="trendChartOptions.dataLabels"
+          [xaxis]="trendChartOptions.xaxis"
+          [yaxis]="trendChartOptions.yaxis"
+          [grid]="trendChartOptions.grid"
+          [legend]="trendChartOptions.legend"
+          [tooltip]="trendChartOptions.tooltip"
+        ></apx-chart>
+      </div>
+    </div>
+
+    <!-- EXPENSE DONUT CHART -->
+    <div class="card chart-card">
+      <div class="card-head">
+        <h3><i class="fas fa-chart-pie"></i> Expense Breakdown</h3>
+        <span class="card-badge">All Time</span>
+      </div>
+      <div class="chart-container donut-wrapper">
+        <apx-chart *ngIf="categoryChartOptions.series"
+          [series]="categoryChartOptions.series"
+          [chart]="categoryChartOptions.chart"
+          [labels]="categoryChartOptions.labels"
+          [colors]="categoryChartOptions.colors"
+          [plotOptions]="categoryChartOptions.plotOptions"
+          [legend]="categoryChartOptions.legend"
+          [dataLabels]="categoryChartOptions.dataLabels"
+          [stroke]="categoryChartOptions.stroke"
+          [tooltip]="categoryChartOptions.tooltip"
+        ></apx-chart>
+      </div>
+      <div class="category-list" *ngIf="expenseByCategory.length > 0">
+        <div class="cat-item" *ngFor="let c of expenseByCategory">
+          <span class="cat-dot" [style.background]="c.color"></span>
+          <span class="cat-name">{{c.category}}</span>
+          <span class="cat-pct">{{c.percentage | number:'1.0-1'}}%</span>
+          <span class="cat-amount">{{formatCurrency(c.amount)}}</span>
+        </div>
+      </div>
+      <div class="no-data-msg" *ngIf="expenseByCategory.length === 0">
+        <i class="fas fa-info-circle"></i> No expense data yet. Import a transaction file to see breakdown.
+      </div>
+    </div>
+
+    <!-- RECENT TRANSACTIONS -->
+    <div class="card transactions-card">
+      <div class="card-head">
+        <h3><i class="fas fa-exchange-alt"></i> Recent Transactions</h3>
+        <a routerLink="/app/transactions" class="view-all">View All <i class="fas fa-arrow-right"></i></a>
+      </div>
+      <div *ngIf="recentTransactions.length > 0">
+        <table class="table-professional">
+          <thead>
+            <tr><th>Transaction</th><th>Category</th><th>Date</th><th>Amount</th></tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let t of recentTransactions">
+              <td>
+                <div class="txn-cell">
+                  <div class="txn-icon" [class.income]="t.type==='INCOME'" [class.expense]="t.type==='EXPENSE'">
+                    <i [class]="t.type === 'INCOME' ? 'fas fa-arrow-down' : 'fas fa-arrow-up'"></i>
+                  </div>
+                  <span>{{t.title}}</span>
+                </div>
+              </td>
+              <td><span class="badge-cat">{{t.category}}</span></td>
+              <td class="text-muted">{{t.date}}</td>
+              <td [class]="t.type === 'INCOME' ? 'text-success fw-600' : 'text-danger fw-600'">
+                {{t.type === 'INCOME' ? '+' : '-'}}{{formatCurrency(t.amount)}}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="no-data-msg" *ngIf="recentTransactions.length === 0">
+        <i class="fas fa-inbox"></i> No transactions yet. Upload a transaction file or add transactions manually.
+      </div>
+    </div>
+
+    <!-- RIGHT PANEL -->
+    <div class="right-panel">
+      <!-- REAL-TIME SUGGESTIONS -->
+      <div class="card insights-card" *ngIf="financialHealth.score > 0">
+        <div class="card-head"><h3><i class="fas fa-bell text-warning"></i> Real-Time Suggestions</h3></div>
+        <div class="insights-body">
+          <div class="insight-item">
+            <div class="insight-icon" [style.color]="getHealthColor()">
+              <i class="fas fa-magic"></i>
+            </div>
+            <div class="insight-text">
+              <strong>Optimize Your Savings</strong>
+              <p>Consider moving 15% of your unused monthly balance into a high-yield index fund.</p>
+            </div>
+          </div>
+          <div class="insight-item" *ngIf="savingsRate > 0">
+            <div class="insight-icon" style="color:#059669"><i class="fas fa-coins"></i></div>
+            <div class="insight-text">
+              <strong>Limit Discretionary Spend</strong>
+              <p>Your current spending velocity suggests limiting dining out this week to stay under budget.</p>
+            </div>
+          </div>
+          <div class="insight-item" *ngIf="monthlyExpenses > 0">
+            <div class="insight-icon" style="color:#d97706"><i class="fas fa-chart-line"></i></div>
+            <div class="insight-text">
+              <strong>Budget Prediction</strong>
+              <p>At this rate, predicted monthly savings: {{formatCurrency(monthlyIncome - monthlyExpenses)}}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- QUICK ACTIONS -->
+      <div class="card quick-card">
+        <div class="card-head"><h3><i class="fas fa-bolt"></i> Quick Actions</h3></div>
+        <div class="quick-grid">
+          <a [routerLink]="a.link" class="quick-item" *ngFor="let a of quickActions">
+            <div class="quick-icon" [style.background]="a.color + '14'" [style.color]="a.color"><i [class]="a.icon"></i></div>
+            <span>{{a.label}}</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

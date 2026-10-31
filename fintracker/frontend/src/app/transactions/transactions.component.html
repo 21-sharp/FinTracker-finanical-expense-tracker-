@@ -1,0 +1,204 @@
+<div class="page">
+  <!-- Transaction Upload Zone -->
+  <div class="upload-zone card" [class.drag-active]="uploadDragOver"
+    (dragover)="onDragOver($event)" (dragleave)="onDragLeave($event)" (drop)="onDrop($event)">
+    <div class="field-warning" *ngIf="uploadWarning">
+      <i class="fas fa-triangle-exclamation"></i> {{uploadWarning}}
+    </div>
+    <div class="upload-content" *ngIf="!uploadProgress && !uploadSuccess">
+      <div class="upload-icon"><i class="fas fa-cloud-upload-alt"></i></div>
+      <h3 class="h5 fw-bold">Import transactions</h3>
+      <p class="text-muted mb-3">Drag & drop a <code>.csv</code>, <code>.xlsx</code>, <code>.xls</code>, <code>.pdf</code>, or <code>.sql</code> file, or select it manually below.</p>
+      <label class="btn btn-primary">
+        <i class="fas fa-file-import me-1"></i> Choose file
+        <input type="file" accept=".csv,.xlsx,.xls,.pdf,.sql" (change)="onFileSelect($event)" hidden>
+      </label>
+    </div>
+    <div class="upload-progress" *ngIf="uploadProgress">
+      <i class="fas fa-spinner fa-spin spin-icon"></i>
+      <p>Processing transaction file...</p>
+    </div>
+    <div class="upload-success" *ngIf="uploadSuccess">
+      <i class="fas fa-check-circle"></i>
+      <p>{{uploadSuccess}}</p>
+    </div>
+  </div>
+
+  <div class="page-header">
+    <div>
+      <h1>Transactions</h1>
+      <p>Manage all your income and expenses</p>
+    </div>
+    <div style="display: flex; gap: 10px;">
+      <button class="btn btn-danger" (click)="deleteAll()"><i class="fas fa-trash"></i> Remove All Transactions</button>
+      <button class="btn-primary" (click)="openAdd()"><i class="fas fa-plus"></i> Add Transaction</button>
+    </div>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-top"><div class="stat-icon blue"><i class="fas fa-exchange-alt"></i></div></div>
+      <div class="stat-value">{{filtered.length}}</div>
+      <div class="stat-label">Total Transactions</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-top"><div class="stat-icon green"><i class="fas fa-arrow-down"></i></div></div>
+      <div class="stat-value">{{formatCurrency(totalIncome)}}</div>
+      <div class="stat-label">Total Income</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-top"><div class="stat-icon red"><i class="fas fa-arrow-up"></i></div></div>
+      <div class="stat-value">{{formatCurrency(totalExpense)}}</div>
+      <div class="stat-label">Total Expenses</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-top"><div class="stat-icon info"><i class="fas fa-piggy-bank"></i></div></div>
+      <div class="stat-value" [class.text-success]="totalIncome - totalExpense >= 0" [class.text-danger]="totalIncome - totalExpense < 0">
+        {{formatCurrency(totalIncome - totalExpense)}}
+      </div>
+      <div class="stat-label">Net Balance</div>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="card filter-card">
+    <div class="filter-bar">
+      <div class="search-input">
+        <i class="fas fa-search"></i>
+        <input type="text" [(ngModel)]="searchQuery" placeholder="Search transactions..." class="form-control">
+      </div>
+      <select [(ngModel)]="filterType" class="form-control filter-select">
+        <option value="ALL">All Types</option>
+        <option value="INCOME">Income</option>
+        <option value="EXPENSE">Expense</option>
+      </select>
+      <select [(ngModel)]="filterCategory" class="form-control filter-select">
+        <option value="">All Categories</option>
+        <option *ngFor="let c of categories">{{c}}</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Transactions Table -->
+  <div class="card">
+    <div *ngIf="loading" class="loading-state">
+      <i class="fas fa-spinner fa-spin"></i> Loading transactions...
+    </div>
+
+    <div *ngIf="!loading && filtered.length === 0" class="no-data-msg">
+      <i class="fas fa-inbox"></i>
+      <h3>No Transactions Yet</h3>
+      <p>Upload a CSV, Excel, PDF, or SQL file, or add transactions manually to get started.</p>
+    </div>
+
+    <table class="table-professional" *ngIf="!loading && filtered.length > 0">
+      <thead>
+        <tr>
+          <th (click)="toggleSort('title')" class="sortable">Transaction <i class="fas fa-sort"></i></th>
+          <th>Type</th>
+          <th>Category</th>
+          <th (click)="toggleSort('date')" class="sortable">Date <i class="fas fa-sort"></i></th>
+          <th>Payment</th>
+          <th (click)="toggleSort('amount')" class="sortable">Amount <i class="fas fa-sort"></i></th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let t of paginatedTransactions">
+          <td>
+            <div class="txn-cell">
+              <div class="txn-icon" [class.income]="t.type==='INCOME'" [class.expense]="t.type==='EXPENSE'">
+                <i [class]="t.type === 'INCOME' ? 'fas fa-arrow-down' : 'fas fa-arrow-up'"></i>
+              </div>
+              <div class="txn-info">
+                <span class="txn-title">{{t.title}}</span>
+                <span class="txn-desc" *ngIf="t.description">{{t.description}}</span>
+              </div>
+            </div>
+          </td>
+          <td><span class="badge-type" [class.income]="t.type==='INCOME'" [class.expense]="t.type==='EXPENSE'">{{t.type === 'INCOME' ? 'Income' : 'Expense'}}</span></td>
+          <td><span class="badge-cat">{{t.category}}</span></td>
+          <td class="text-muted">{{t.date}}</td>
+          <td class="text-muted">{{t.paymentMethod || '-'}}</td>
+          <td [class]="t.type === 'INCOME' ? 'text-success fw-600' : 'text-danger fw-600'">
+            {{t.type === 'INCOME' ? '+' : '-'}}{{formatCurrency(t.amount)}}
+          </td>
+          <td>
+            <div class="action-btns">
+              <button class="action-btn edit" (click)="editTxn(t)"><i class="fas fa-pen"></i></button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Pagination -->
+    <div class="pagination" *ngIf="totalPages > 1">
+      <button (click)="currentPage = currentPage - 1" [disabled]="currentPage === 1" class="page-btn">
+        <i class="fas fa-chevron-left"></i>
+      </button>
+      <button *ngFor="let p of pages" (click)="currentPage = p"
+        [class.active]="currentPage === p" class="page-btn">{{p}}</button>
+      <button (click)="currentPage = currentPage + 1" [disabled]="currentPage === totalPages" class="page-btn">
+        <i class="fas fa-chevron-right"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Add/Edit Modal -->
+  <div class="modal-backdrop" *ngIf="showAddModal">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>{{editingTransaction ? 'Edit' : 'Add'}} Transaction</h3>
+        <button class="btn-close" (click)="showAddModal = false"><i class="fas fa-times"></i></button>
+      </div>
+      <form (ngSubmit)="saveTxn()">
+        <div class="field-warning" *ngIf="formWarning">
+          <i class="fas fa-triangle-exclamation"></i> {{formWarning}}
+        </div>
+        <div class="form-group">
+          <label class="form-label">Title</label>
+          <input type="text" [(ngModel)]="newTxn.title" name="title" class="form-control" placeholder="e.g. Grocery Shopping" required>
+        </div>
+        <div class="form-row-2">
+          <div class="form-group">
+            <label class="form-label">Type</label>
+            <select [(ngModel)]="newTxn.type" name="type" class="form-control">
+              <option value="EXPENSE">Expense</option>
+              <option value="INCOME">Income</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Amount (₹)</label>
+            <input type="number" [(ngModel)]="newTxn.amount" name="amount" class="form-control" required>
+          </div>
+        </div>
+        <div class="form-row-2">
+          <div class="form-group">
+            <label class="form-label">Category</label>
+            <select [(ngModel)]="newTxn.category" name="category" class="form-control">
+              <option *ngFor="let c of categories">{{c}}</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Date</label>
+            <input type="date" [(ngModel)]="newTxn.date" name="date" class="form-control" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Payment Method</label>
+          <input type="text" [(ngModel)]="newTxn.paymentMethod" name="paymentMethod" class="form-control" placeholder="e.g. UPI, Credit Card">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Description</label>
+          <input type="text" [(ngModel)]="newTxn.description" name="description" class="form-control" placeholder="Optional notes">
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-outline" (click)="showAddModal = false">Cancel</button>
+          <button type="submit" class="btn-primary">{{editingTransaction ? 'Update' : 'Add'}} Transaction</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
